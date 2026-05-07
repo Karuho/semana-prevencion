@@ -93,6 +93,7 @@ let currentQuestionIndex = 0;
 let score = 0;
 let lives = CONFIG.startingLives;
 let gameResult = "Pendiente";
+let audioContext = null;
 
 const startScreen = document.getElementById("startScreen");
 const gameScreen = document.getElementById("gameScreen");
@@ -128,6 +129,7 @@ const endTitle = document.getElementById("endTitle");
 const endMessage = document.getElementById("endMessage");
 const finalScore = document.getElementById("finalScore");
 const finalLives = document.getElementById("finalLives");
+const celebrationEmoji = document.getElementById("celebrationEmoji");
 const finalLivesLine = document.getElementById("finalLivesLine");
 const endWorkerImage = document.getElementById("endWorkerImage");
 
@@ -135,9 +137,19 @@ const participantForm = document.getElementById("participantForm");
 const dataScore = document.getElementById("dataScore");
 const dataResult = document.getElementById("dataResult");
 
-startBtn.addEventListener("click", startGame);
-restartBtn.addEventListener("click", startGame);
-playAgainBtn.addEventListener("click", startGame);
+startBtn.addEventListener("click", () => {
+    initAudio();
+    startGame();
+});
+restartBtn.addEventListener("click", () => {
+    initAudio();
+    startGame();
+});
+
+playAgainBtn.addEventListener("click", () => {
+    initAudio();
+    startGame();
+});
 nextBtn.addEventListener("click", goToNextQuestion);
 goToDataBtn.addEventListener("click", showDataScreen);
 participantForm.addEventListener("submit", handleParticipantSubmit);
@@ -228,6 +240,7 @@ function handleAnswer(selectedIndex) {
         score += CONFIG.pointsPerCorrect;
         setWorkerState("win");
         showEffect("✅");
+        playSuccessSound();
         showFeedback(currentQuestion.successMessage, "success");
         updateHud();
         return;
@@ -288,6 +301,7 @@ function clearEffect() {
 }
 
 function triggerShock() {
+    playElectricSound();
     setWorkerState("shock");
     showEffect("FLASH ⚡");
 
@@ -365,6 +379,10 @@ function finishGame(completedAllQuestions) {
     successActions.classList.add("hidden");
     failActions.classList.add("hidden");
 
+    if (celebrationEmoji) {
+        celebrationEmoji.classList.add("hidden");
+    }
+
     if (endWorkerImage) {
         endWorkerImage.classList.add("hidden");
     }
@@ -374,6 +392,8 @@ function finishGame(completedAllQuestions) {
     }
 
     if (lives <= 0) {
+        playFailSound();
+
         gameResult = "No aprobado";
         endTitle.textContent = "💀 No fuiste preventivo";
         endMessage.textContent = "Perdiste tus 3 vidas. Revisa el procedimiento y vuelve a intentarlo.";
@@ -389,6 +409,13 @@ function finishGame(completedAllQuestions) {
 
         failActions.classList.remove("hidden");
     } else if (completedAllQuestions) {
+        playVictorySound();
+        launchConfetti();
+
+        if (celebrationEmoji) {
+            celebrationEmoji.classList.remove("hidden");
+        }
+
         gameResult = "Aprobado";
         endTitle.textContent = "🏆 ¡Fuiste preventivo!";
         endMessage.textContent = "Completaste la misión de forma segura. Ahora registra tus datos para finalizar la participación.";
@@ -424,7 +451,7 @@ function handleParticipantSubmit(event) {
         lives: String(lives),
         result: gameResult,
         successRate: calculateSuccessRate(),
-        submittedAt: new Date().toISOString()
+        submittedAt: getReadableDateTime()
     };
 
     submitToGoogleForm(payload);
@@ -491,4 +518,132 @@ function appendHiddenInput(form, name, value) {
 function showThanksScreen() {
     hideAllScreens();
     showScreen(thanksScreen);
+}
+
+function getReadableDateTime() {
+    const now = new Date();
+
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = now.getFullYear();
+
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+
+    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+}
+
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+}
+
+function playTone(frequency, duration, type = "sine", volume = 0.12, delay = 0) {
+    if (!audioContext) return;
+
+    const startTime = audioContext.currentTime + delay;
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, startTime);
+
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start(startTime);
+    oscillator.stop(startTime + duration + 0.02);
+}
+
+function playSuccessSound() {
+    initAudio();
+
+    playTone(523.25, 0.12, "sine", 0.12, 0);
+    playTone(659.25, 0.12, "sine", 0.12, 0.11);
+    playTone(783.99, 0.18, "sine", 0.14, 0.22);
+}
+
+function playVictorySound() {
+    initAudio();
+
+    playTone(523.25, 0.12, "triangle", 0.12, 0);
+    playTone(659.25, 0.12, "triangle", 0.12, 0.10);
+    playTone(783.99, 0.12, "triangle", 0.12, 0.20);
+    playTone(1046.5, 0.32, "triangle", 0.15, 0.32);
+}
+
+function playFailSound() {
+    initAudio();
+
+    playTone(392, 0.18, "sawtooth", 0.11, 0);
+    playTone(349.23, 0.18, "sawtooth", 0.11, 0.18);
+    playTone(311.13, 0.22, "sawtooth", 0.11, 0.36);
+    playTone(261.63, 0.45, "sawtooth", 0.13, 0.58);
+}
+
+function playElectricSound() {
+    initAudio();
+
+    if (!audioContext) return;
+
+    const duration = 0.55;
+    const sampleRate = audioContext.sampleRate;
+    const bufferSize = sampleRate * duration;
+    const buffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const gain = audioContext.createGain();
+
+    noise.buffer = buffer;
+
+    filter.type = "bandpass";
+    filter.frequency.value = 1800;
+    filter.Q.value = 8;
+
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.22, audioContext.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioContext.destination);
+
+    noise.start();
+    noise.stop(audioContext.currentTime + duration);
+}
+
+function launchConfetti() {
+    const colors = ["#facc15", "#22c55e", "#38bdf8", "#f97316", "#ec4899", "#a855f7"];
+
+    for (let i = 0; i < 55; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti-piece";
+        piece.style.left = `${Math.random() * 100}vw`;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = `${Math.random() * 0.4}s`;
+        piece.style.animationDuration = `${1.4 + Math.random() * 1.2}s`;
+        piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+        document.body.appendChild(piece);
+
+        setTimeout(() => {
+            piece.remove();
+        }, 3000);
+    }
 }
