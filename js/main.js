@@ -7,23 +7,6 @@ const CONFIG = {
         shock: "assets/electricista-shock.png",
         burned: "assets/electricista-chamuscado.png"
     },
-
-    googleForm: {
-        postUrl: "https://docs.google.com/forms/d/e/1FAIpQLSeUxD3MqmC66ySogzIMdiFogl-n6G2rqF8XKcJY-kpPYog6UA/formResponse",
-
-        entries: {
-            firstName: "entry.1867086155",
-            lastName: "entry.1819640284",
-            age: "entry.133390239",
-            company: "entry.1177464113",
-            email: "entry.722734976",
-            score: "entry.847699678",
-            lives: "entry.1712921415",
-            result: "entry.246727910",
-            successRate: "entry.1613079791",
-            submittedAt: "entry.1189718321"
-        }
-    }
 };
 
 const questions = [
@@ -464,55 +447,29 @@ function calculateSuccessRate() {
 }
 
 function submitToGoogleForm(payload) {
-    const formConfig = CONFIG.googleForm;
+    console.log("Enviando participación al backend:", payload);
 
-    const isConfigured =
-        formConfig.postUrl &&
-        !formConfig.postUrl.includes("REEMPLAZA_ESTO") &&
-        Object.values(formConfig.entries).every((entry) => !entry.includes("REEMPLAZA"));
-
-    if (!isConfigured) {
-        console.log("Google Form aún no configurado. Payload listo:", payload);
-        showThanksScreen();
-        return;
-    }
-
-    const formData = new URLSearchParams();
-
-    formData.append(formConfig.entries.firstName, payload.firstName);
-    formData.append(formConfig.entries.lastName, payload.lastName);
-    formData.append(formConfig.entries.age, payload.age);
-    formData.append(formConfig.entries.company, payload.company);
-    formData.append(formConfig.entries.email, payload.email);
-    formData.append(formConfig.entries.score, payload.score);
-    formData.append(formConfig.entries.lives, payload.lives);
-    formData.append(formConfig.entries.result, payload.result);
-    formData.append(formConfig.entries.successRate, payload.successRate);
-    formData.append(formConfig.entries.submittedAt, payload.submittedAt);
-
-    console.log("Enviando a Google Forms:", Object.fromEntries(formData));
-
-    fetch(formConfig.postUrl, {
+    fetch("/api/submit", {
         method: "POST",
-        mode: "no-cors",
-        body: formData
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
     })
-        .then(() => {
-            console.log("Solicitud enviada a Google Forms.");
+        .then(async (response) => {
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok || !data || !data.ok) {
+                throw new Error(data?.error || "No se pudo registrar la participación.");
+            }
+
+            console.log("Respuesta del backend:", data);
             showThanksScreen();
         })
         .catch((error) => {
-            console.error("Error enviando a Google Forms:", error);
+            console.error("Error enviando participación:", error);
             alert("No se pudo enviar la participación. Intenta nuevamente.");
         });
-}
-
-function appendHiddenInput(form, name, value) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = value;
-    form.appendChild(input);
 }
 
 function showThanksScreen() {
