@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semana de la Prevención</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <section id="startScreen" class="screen active">
+      <div class="card center">
+        <p class="eyebrow">Semana de la Prevención</p>
+        <h1>¿Fuiste preventivo?</h1>
+        <p class="subtitle">
+          Ayuda al electricista a completar su jornada de forma segura.
+          Responde correctamente, suma puntos y cuida tus 3 vidas.
+        </p>
+
+        <div class="mini-preview">
+          <div class="worker">🧑‍🔧</div>
+          <div class="spark">⚡</div>
+        </div>
+
+        <button id="startBtn" class="btn btn-primary">Comenzar</button>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <div class="hud">
+        <div class="hud-item">
+          <span class="hud-label">Vidas</span>
+          <div id="livesDisplay" class="lives"></div>
+        </div>
+
+        <div class="hud-item">
+          <span class="hud-label">Puntos</span>
+          <strong id="scoreDisplay">0</strong>
+        </div>
+
+        <div class="hud-item">
+          <span class="hud-label">Pregunta</span>
+          <strong id="progressDisplay">1 / 5</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="scene">
+          <div id="workerAvatar" class="worker-avatar">🧑‍🔧</div>
+          <div id="eventEffect" class="event-effect"></div>
+        </div>
+
+        <p class="question-tag">Situación</p>
+        <h2 id="questionText" class="question-text">Cargando pregunta...</h2>
+
+        <div id="optionsContainer" class="options"></div>
+
+        <div id="feedbackBox" class="feedback hidden">
+          <p id="feedbackText"></p>
+          <button id="nextBtn" class="btn btn-primary">Siguiente</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="endScreen" class="screen">
+      <div class="card center">
+        <p class="eyebrow">Resultado final</p>
+        <h2 id="endTitle">Fin del juego</h2>
+        <p id="endMessage" class="subtitle"></p>
+
+        <div class="result-box">
+          <p><strong>Puntaje final:</strong> <span id="finalScore">0</span></p>
+          <p><strong>Vidas restantes:</strong> <span id="finalLives">0</span></p>
+        </div>
+
+        <div class="end-actions">
+          <button id="restartBtn" class="btn btn-primary">↻ Reintentar</button>
+          <a id="formBtn" class="btn btn-secondary" href="#" target="_blank" rel="noopener noreferrer">
+            Registrar participación
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>
