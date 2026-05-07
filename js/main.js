@@ -1,80 +1,20 @@
 const CONFIG = {
-    startingLives: 3,
-    pointsPerCorrect: 10,
-
     images: {
         normal: "assets/electricista-normal.png",
         shock: "assets/electricista-shock.png",
         burned: "assets/electricista-chamuscado.png"
-    },
+    }
 };
 
-const questions = [
-    {
-        question: "Antes de intervenir un tablero eléctrico, ¿qué debes hacer primero?",
-        options: [
-            "Usar guantes solamente",
-            "Cortar energía, bloquear y señalizar",
-            "Trabajar rápido para terminar antes",
-            "Pedir ayuda cuando ya esté abierto"
-        ],
-        correctIndex: 1,
-        successMessage: "Correcto. Aplicaste control de energía y trabajo seguro.",
-        errorMessage: "Incorrecto. El electricista sufrió un accidente por no aplicar el procedimiento seguro."
-    },
-    {
-        question: "¿Qué elemento es clave antes de trabajar con electricidad?",
-        options: [
-            "EPP adecuado e inspeccionado",
-            "Solo casco",
-            "Solo lentes oscuros",
-            "Ninguno si el trabajo es breve"
-        ],
-        correctIndex: 0,
-        successMessage: "Bien hecho. El uso de EPP adecuado reduce el riesgo.",
-        errorMessage: "Incorrecto. Sin protección adecuada aumentó el riesgo de accidente."
-    },
-    {
-        question: "Si encuentras cables dañados o expuestos, ¿qué corresponde hacer?",
-        options: [
-            "Cubrirlos con cualquier cinta y seguir",
-            "Reportar, aislar el área y corregir antes de continuar",
-            "Ignorarlos si no están chispando",
-            "Moverlos con la mano rápidamente"
-        ],
-        correctIndex: 1,
-        successMessage: "Correcto. Identificaste la condición insegura y actuaste de forma preventiva.",
-        errorMessage: "Incorrecto. La condición insegura generó un accidente."
-    },
-    {
-        question: "¿Qué debes revisar antes de usar una herramienta eléctrica?",
-        options: [
-            "Solo que encienda",
-            "Que esté limpia",
-            "Su estado, aislación y condiciones seguras de uso",
-            "Nada, si alguien más ya la ocupó"
-        ],
-        correctIndex: 2,
-        successMessage: "Correcto. Inspeccionar herramientas evita incidentes.",
-        errorMessage: "Incorrecto. La herramienta defectuosa provocó un accidente."
-    },
-    {
-        question: "Si ocurre una emergencia eléctrica, ¿qué es lo más preventivo?",
-        options: [
-            "Tocar a la persona de inmediato",
-            "Cortar la energía y activar el protocolo de emergencia",
-            "Grabar lo sucedido",
-            "Esperar a ver si se recupera sola"
-        ],
-        correctIndex: 1,
-        successMessage: "Muy bien. Priorizaste una respuesta segura y ordenada.",
-        errorMessage: "Incorrecto. Una mala reacción empeoró la emergencia."
-    }
-];
+const DISPLAY_TOTAL_LIVES = 3;
 
-let currentQuestionIndex = 0;
+let gameToken = null;
+let currentQuestion = null;
+let pendingNextQuestion = null;
+let lastAnswerResult = null;
+
 let score = 0;
-let lives = CONFIG.startingLives;
+let lives = DISPLAY_TOTAL_LIVES;
 let gameResult = "Pendiente";
 let audioContext = null;
 
@@ -142,18 +82,29 @@ workerImage.addEventListener("error", () => {
     workerFallback.style.display = "block";
 });
 
-function startGame() {
-    currentQuestionIndex = 0;
-    score = 0;
-    lives = CONFIG.startingLives;
-    gameResult = "Pendiente";
+async function startGame() {
+    try {
+        const data = await apiPost("/api/game", {
+            action: "start"
+        });
 
-    setWorkerState("normal");
-    updateHud();
-    hideAllScreens();
-    showScreen(gameScreen);
-    hideFeedback();
-    renderQuestion();
+        gameToken = data.token;
+        currentQuestion = data.question;
+        pendingNextQuestion = null;
+        lastAnswerResult = null;
+
+        syncGameState(data.state);
+
+        setWorkerState("normal");
+        updateHud();
+        hideAllScreens();
+        showScreen(gameScreen);
+        hideFeedback();
+        renderQuestion(data.question);
+    } catch (error) {
+        console.error("No se pudo iniciar la partida:", error);
+        alert("No se pudo iniciar el juego. Intenta nuevamente.");
+    }
 }
 
 function hideAllScreens() {
@@ -169,9 +120,14 @@ function showScreen(screenElement) {
 }
 
 function updateHud() {
-    livesDisplay.innerHTML = buildLivesHtml(lives, CONFIG.startingLives);
+    livesDisplay.innerHTML = buildLivesHtml(lives, DISPLAY_TOTAL_LIVES);
     scoreDisplay.textContent = score;
-    progressDisplay.textContent = `${Math.min(currentQuestionIndex + 1, questions.length)} / ${questions.length}`;
+
+    if (currentQuestion) {
+        progressDisplay.textContent = `${currentQuestion.index + 1} / ${currentQuestion.total}`;
+    } else {
+        progressDisplay.textContent = `1 / 5`;
+    }
 }
 
 function buildLivesHtml(currentLives, totalLives) {
@@ -182,12 +138,12 @@ function buildLivesHtml(currentLives, totalLives) {
     return html;
 }
 
-function renderQuestion() {
+function renderQuestion(questionData) {
     hideFeedback();
     clearEffect();
     setWorkerState("normal");
 
-    const currentQuestion = questions[currentQuestionIndex];
+    currentQuestion = questionData;
     questionText.textContent = currentQuestion.question;
     optionsContainer.innerHTML = "";
 
@@ -202,36 +158,56 @@ function renderQuestion() {
     updateHud();
 }
 
-function handleAnswer(selectedIndex) {
-    const currentQuestion = questions[currentQuestionIndex];
+async function handleAnswer(selectedIndex) {
     const optionButtons = document.querySelectorAll(".option-btn");
-    const isCorrect = selectedIndex === currentQuestion.correctIndex;
+
+    optionButtons.forEach((btn) => {
+        btn.disabled = true;
+    });
+
+    let data;
+
+    try {
+        data = await apiPost("/api/game", {
+            action: "answer",
+            token: gameToken,
+            selectedIndex
+        });
+    } catch (error) {
+        console.error("Error validando respuesta:", error);
+        alert("No se pudo validar la respuesta. Intenta nuevamente.");
+        return;
+    }
+
+    gameToken = data.token;
+    pendingNextQuestion = data.nextQuestion;
+    lastAnswerResult = data;
+
+    syncGameState(data.state);
+
+    const answer = data.answer;
 
     optionButtons.forEach((btn, index) => {
-        btn.disabled = true;
-
-        if (index === currentQuestion.correctIndex) {
+        if (index === answer.correctIndex) {
             btn.classList.add("correct");
         }
 
-        if (index === selectedIndex && !isCorrect) {
+        if (index === answer.selectedIndex && !answer.isCorrect) {
             btn.classList.add("wrong");
         }
     });
 
-    if (isCorrect) {
-        score += CONFIG.pointsPerCorrect;
+    if (answer.isCorrect) {
         setWorkerState("win");
         showEffect("✅");
         playSuccessSound();
-        showFeedback(currentQuestion.successMessage, "success");
+        showFeedback(answer.feedbackMessage, "success");
         updateHud();
         return;
     }
 
-    lives -= 1;
     triggerShock();
-    showFeedback(currentQuestion.errorMessage, "error");
+    showFeedback(answer.feedbackMessage, "error");
     updateHud();
 
     if (lives <= 0) {
@@ -242,8 +218,6 @@ function handleAnswer(selectedIndex) {
         setTimeout(() => {
             finishGame(false);
         }, 1100);
-
-        return;
     }
 }
 
@@ -256,7 +230,7 @@ function showFeedback(message, type) {
     if (lives <= 0) {
         nextBtn.textContent = "Ver resultado";
         nextBtn.classList.add("hidden");
-    } else if (currentQuestionIndex >= questions.length - 1) {
+    } else if (lastAnswerResult?.state?.completed) {
         nextBtn.textContent = "Finalizar";
     } else {
         nextBtn.textContent = "Siguiente";
@@ -338,18 +312,17 @@ function setWorkerState(state) {
 }
 
 function goToNextQuestion() {
-    if (lives <= 0) {
-        finishGame(false);
+    if (lastAnswerResult?.state?.completed) {
+        finishGame(lastAnswerResult.state.result === "Aprobado");
         return;
     }
 
-    if (currentQuestionIndex >= questions.length - 1) {
-        finishGame(true);
+    if (pendingNextQuestion) {
+        renderQuestion(pendingNextQuestion);
+        pendingNextQuestion = null;
+        lastAnswerResult = null;
         return;
     }
-
-    currentQuestionIndex += 1;
-    renderQuestion();
 }
 
 function finishGame(completedAllQuestions) {
@@ -424,37 +397,33 @@ function showDataScreen() {
 function handleParticipantSubmit(event) {
     event.preventDefault();
 
-    const payload = {
+    const participant = {
         firstName: document.getElementById("firstName").value.trim(),
         lastName: document.getElementById("lastName").value.trim(),
         age: document.getElementById("age").value.trim(),
         company: document.getElementById("company").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        score: String(score),
-        lives: String(lives),
-        result: gameResult,
-        successRate: calculateSuccessRate(),
-        submittedAt: getReadableDateTime()
+        email: document.getElementById("email").value.trim()
     };
 
-    submitToGoogleForm(payload);
-}
-
-function calculateSuccessRate() {
-    const maxScore = questions.length * CONFIG.pointsPerCorrect;
-    if (maxScore <= 0) return "0";
-    return Math.round((score / maxScore) * 100).toString();
+    submitToGoogleForm({
+        token: gameToken,
+        participant
+    });
 }
 
 function submitToGoogleForm(payload) {
-    console.log("Enviando participación al backend:", payload);
+    console.log("Enviando participación protegida:", payload);
 
-    fetch("/api/submit", {
+    fetch("/api/game", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+            action: "submit",
+            token: payload.token,
+            participant: payload.participant
+        })
     })
         .then(async (response) => {
             const data = await response.json().catch(() => null);
@@ -475,20 +444,6 @@ function submitToGoogleForm(payload) {
 function showThanksScreen() {
     hideAllScreens();
     showScreen(thanksScreen);
-}
-
-function getReadableDateTime() {
-    const now = new Date();
-
-    const day = String(now.getDate()).padStart(2, "0");
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const year = now.getFullYear();
-
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    const seconds = String(now.getSeconds()).padStart(2, "0");
-
-    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 }
 
 function initAudio() {
@@ -602,5 +557,37 @@ function launchConfetti() {
         setTimeout(() => {
             piece.remove();
         }, 3000);
+    }
+}
+
+async function apiPost(url, payload) {
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data || !data.ok) {
+        throw new Error(data?.error || "Error de comunicación con el backend.");
+    }
+
+    return data;
+}
+
+function syncGameState(state) {
+    score = state.score;
+    lives = state.lives;
+    gameResult = state.result;
+
+    if (dataScore) {
+        dataScore.textContent = score;
+    }
+
+    if (dataResult) {
+        dataResult.textContent = gameResult;
     }
 }
