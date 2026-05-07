@@ -438,6 +438,7 @@ function calculateSuccessRate() {
 
 function submitToGoogleForm(payload) {
     const formConfig = CONFIG.googleForm;
+
     const isConfigured =
         formConfig.postUrl &&
         !formConfig.postUrl.includes("REEMPLAZA_ESTO") &&
@@ -449,38 +450,34 @@ function submitToGoogleForm(payload) {
         return;
     }
 
-    const iframeName = "hiddenGoogleFormFrame";
-    let iframe = document.querySelector(`iframe[name="${iframeName}"]`);
+    const formData = new URLSearchParams();
 
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.name = iframeName;
-        iframe.style.display = "none";
-        document.body.appendChild(iframe);
-    }
+    formData.append(formConfig.entries.firstName, payload.firstName);
+    formData.append(formConfig.entries.lastName, payload.lastName);
+    formData.append(formConfig.entries.age, payload.age);
+    formData.append(formConfig.entries.company, payload.company);
+    formData.append(formConfig.entries.email, payload.email);
+    formData.append(formConfig.entries.score, payload.score);
+    formData.append(formConfig.entries.lives, payload.lives);
+    formData.append(formConfig.entries.result, payload.result);
+    formData.append(formConfig.entries.successRate, payload.successRate);
+    formData.append(formConfig.entries.submittedAt, payload.submittedAt);
 
-    const form = document.createElement("form");
-    form.action = formConfig.postUrl;
-    form.method = "POST";
-    form.target = iframeName;
-    form.style.display = "none";
+    console.log("Enviando a Google Forms:", Object.fromEntries(formData));
 
-    appendHiddenInput(form, formConfig.entries.firstName, payload.firstName);
-    appendHiddenInput(form, formConfig.entries.lastName, payload.lastName);
-    appendHiddenInput(form, formConfig.entries.age, payload.age);
-    appendHiddenInput(form, formConfig.entries.company, payload.company);
-    appendHiddenInput(form, formConfig.entries.email, payload.email);
-    appendHiddenInput(form, formConfig.entries.score, payload.score);
-    appendHiddenInput(form, formConfig.entries.lives, payload.lives);
-    appendHiddenInput(form, formConfig.entries.result, payload.result);
-    appendHiddenInput(form, formConfig.entries.successRate, payload.successRate);
-    appendHiddenInput(form, formConfig.entries.submittedAt, payload.submittedAt);
-
-    document.body.appendChild(form);
-    form.submit();
-    form.remove();
-
-    setTimeout(showThanksScreen, 900);
+    fetch(formConfig.postUrl, {
+        method: "POST",
+        mode: "no-cors",
+        body: formData
+    })
+        .then(() => {
+            console.log("Solicitud enviada a Google Forms.");
+            showThanksScreen();
+        })
+        .catch((error) => {
+            console.error("Error enviando a Google Forms:", error);
+            alert("No se pudo enviar la participación. Intenta nuevamente.");
+        });
 }
 
 function appendHiddenInput(form, name, value) {
