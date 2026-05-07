@@ -128,6 +128,8 @@ const endTitle = document.getElementById("endTitle");
 const endMessage = document.getElementById("endMessage");
 const finalScore = document.getElementById("finalScore");
 const finalLives = document.getElementById("finalLives");
+const finalLivesLine = document.getElementById("finalLivesLine");
+const endWorkerImage = document.getElementById("endWorkerImage");
 
 const participantForm = document.getElementById("participantForm");
 const dataScore = document.getElementById("dataScore");
@@ -227,27 +229,37 @@ function handleAnswer(selectedIndex) {
         setWorkerState("win");
         showEffect("✅");
         showFeedback(currentQuestion.successMessage, "success");
-    } else {
-        lives -= 1;
-        triggerShock();
-
-        if (lives <= 0) {
-            setTimeout(() => setWorkerState("burned"), 450);
-        }
-
-        showFeedback(currentQuestion.errorMessage, "error");
+        updateHud();
+        return;
     }
 
+    lives -= 1;
+    triggerShock();
+    showFeedback(currentQuestion.errorMessage, "error");
     updateHud();
+
+    if (lives <= 0) {
+        setTimeout(() => {
+            setWorkerState("burned");
+        }, 450);
+
+        setTimeout(() => {
+            finishGame(false);
+        }, 1100);
+
+        return;
+    }
 }
 
 function showFeedback(message, type) {
     feedbackText.textContent = message;
     feedbackBox.classList.remove("hidden", "success", "error");
     feedbackBox.classList.add(type);
+    nextBtn.classList.remove("hidden");
 
     if (lives <= 0) {
         nextBtn.textContent = "Ver resultado";
+        nextBtn.classList.add("hidden");
     } else if (currentQuestionIndex >= questions.length - 1) {
         nextBtn.textContent = "Finalizar";
     } else {
@@ -353,20 +365,40 @@ function finishGame(completedAllQuestions) {
     successActions.classList.add("hidden");
     failActions.classList.add("hidden");
 
+    if (endWorkerImage) {
+        endWorkerImage.classList.add("hidden");
+    }
+
+    if (finalLivesLine) {
+        finalLivesLine.classList.remove("danger");
+    }
+
     if (lives <= 0) {
         gameResult = "No aprobado";
         endTitle.textContent = "💀 No fuiste preventivo";
         endMessage.textContent = "Perdiste tus 3 vidas. Revisa el procedimiento y vuelve a intentarlo.";
+
+        if (endWorkerImage) {
+            endWorkerImage.src = CONFIG.images.burned;
+            endWorkerImage.classList.remove("hidden");
+        }
+
+        if (finalLivesLine) {
+            finalLivesLine.classList.add("danger");
+        }
+
         failActions.classList.remove("hidden");
     } else if (completedAllQuestions) {
         gameResult = "Aprobado";
         endTitle.textContent = "🏆 ¡Fuiste preventivo!";
         endMessage.textContent = "Completaste la misión de forma segura. Ahora registra tus datos para finalizar la participación.";
+
         successActions.classList.remove("hidden");
     } else {
         gameResult = "Finalizado";
         endTitle.textContent = "Fin del juego";
         endMessage.textContent = "Gracias por participar.";
+
         failActions.classList.remove("hidden");
     }
 }
