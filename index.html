@@ -4,10 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Semana de la Prevención</title>
-  <link rel="stylesheet" href="css/style.css?v=1" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="screenFlash" class="screen-flash"></div>
+
   <main class="app">
+    <header class="app-header">
+      <img
+        src="assets/fleischmann.png"
+        alt="Logo Fleischmann"
+        class="brand-logo"
+        onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';"
+      />
+      <div id="logoFallback" class="logo-fallback">Fleischmann</div>
+    </header>
+
     <section id="startScreen" class="screen active">
       <div class="card center">
         <p class="eyebrow">Semana de la Prevención</p>
@@ -44,9 +56,23 @@
         </div>
       </div>
 
-      <div class="card">
+      <div id="gameCard" class="card">
         <div class="scene">
-          <div id="workerAvatar" class="worker-avatar">🧑‍🔧</div>
+          <div id="electricOverlay" class="electric-overlay">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <img
+            id="workerImage"
+            class="worker-image"
+            src="assets/electricista-normal.png"
+            alt="Electricista"
+          />
+
+          <div id="workerFallback" class="worker-fallback">🧑‍🔧</div>
           <div id="eventEffect" class="event-effect"></div>
         </div>
 
@@ -73,16 +99,78 @@
           <p><strong>Vidas restantes:</strong> <span id="finalLives">0</span></p>
         </div>
 
-        <div class="end-actions">
+        <div id="successActions" class="end-actions hidden">
+          <button id="goToDataBtn" class="btn btn-primary">Completar datos</button>
+        </div>
+
+        <div id="failActions" class="end-actions hidden">
           <button id="restartBtn" class="btn btn-primary">↻ Reintentar</button>
-          <a id="formBtn" class="btn btn-secondary" href="#" target="_blank" rel="noopener noreferrer">
-            Registrar participación
-          </a>
         </div>
       </div>
     </section>
+
+    <section id="dataScreen" class="screen">
+      <div class="card">
+        <p class="eyebrow">Registro de participación</p>
+        <h2>Completa tus datos</h2>
+        <p class="subtitle">
+          Estos datos se asociarán al puntaje obtenido en el juego.
+        </p>
+
+        <form id="participantForm" class="participant-form">
+          <div class="form-grid">
+            <label>
+              Nombre
+              <input id="firstName" name="firstName" type="text" autocomplete="given-name" required />
+            </label>
+
+            <label>
+              Apellido
+              <input id="lastName" name="lastName" type="text" autocomplete="family-name" required />
+            </label>
+
+            <label>
+              Edad
+              <input id="age" name="age" type="number" min="1" max="120" required />
+            </label>
+
+            <label>
+              Empresa
+              <input id="company" name="company" type="text" required />
+            </label>
+
+            <label class="full">
+              Correo
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </label>
+          </div>
+
+          <div class="result-box compact">
+            <p><strong>Puntaje:</strong> <span id="dataScore">0</span></p>
+            <p><strong>Resultado:</strong> <span id="dataResult">Aprobado</span></p>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Enviar participación</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="thanksScreen" class="screen">
+      <div class="card center">
+        <p class="eyebrow">Registro enviado</p>
+        <h2>✅ Participación registrada</h2>
+        <p class="subtitle">
+          Gracias por participar en la Semana de la Prevención.
+        </p>
+        <button id="playAgainBtn" class="btn btn-secondary">Jugar nuevamente</button>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      © Dynasty Projects 2026 - Todos los derechos reservados.
+    </footer>
   </main>
 
-  <script src="js/main.js?v=1"></script>
+  <script src="main.js"></script>
 </body>
 </html>

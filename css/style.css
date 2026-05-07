@@ -10,6 +10,7 @@
   --danger: #ef4444;
   --danger-soft: #7f1d1d;
   --warning: #f59e0b;
+  --electric: #facc15;
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
 }
@@ -18,7 +19,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   font-family: Arial, Helvetica, sans-serif;
@@ -35,10 +37,49 @@ body {
 .app {
   width: 100%;
   min-height: 100vh;
-  padding: 20px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-header {
+  width: 100%;
+  max-width: 720px;
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 58px;
+}
+
+.brand-logo {
+  max-width: 210px;
+  max-height: 54px;
+  object-fit: contain;
+  display: block;
+}
+
+.logo-fallback {
+  display: none;
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-size: 24px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.app-footer {
+  width: 100%;
+  max-width: 720px;
+  text-align: center;
+  color: rgba(248, 250, 252, 0.7);
+  font-size: 12px;
+  padding: 6px 0 2px;
 }
 
 .screen {
@@ -57,6 +98,8 @@ body {
   border-radius: 22px;
   padding: 24px;
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .center {
@@ -72,7 +115,8 @@ body {
   font-weight: bold;
 }
 
-h1, h2 {
+h1,
+h2 {
   margin: 0 0 14px;
   line-height: 1.15;
 }
@@ -84,7 +128,7 @@ h1, h2 {
 }
 
 .mini-preview {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 20px;
@@ -112,7 +156,7 @@ h1, h2 {
 }
 
 .hud-item {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 14px;
@@ -133,43 +177,119 @@ h1, h2 {
 
 .scene {
   position: relative;
-  min-height: 96px;
+  min-height: 148px;
   display: flex;
   justify-content: center;
   align-items: center;
   margin-bottom: 12px;
-  background: rgba(255,255,255,0.04);
+  background:
+    radial-gradient(circle at center, rgba(250, 204, 21, 0.12), transparent 40%),
+    rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   border-radius: 18px;
+  overflow: hidden;
 }
 
-.worker-avatar {
-  font-size: 62px;
+.worker-image {
+  width: 118px;
+  height: 118px;
+  object-fit: contain;
+  display: block;
+  position: relative;
+  z-index: 2;
   transition: transform 0.25s ease, filter 0.25s ease;
 }
 
-.worker-avatar.hit {
-  transform: scale(1.08) rotate(-6deg);
-  filter: brightness(1.2);
+.worker-fallback {
+  display: none;
+  font-size: 72px;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.25s ease, filter 0.25s ease;
 }
 
-.worker-avatar.win {
+.worker-image.hit,
+.worker-fallback.hit {
+  transform: scale(1.08) rotate(-7deg);
+  filter: brightness(1.35) contrast(1.2);
+}
+
+.worker-image.burned,
+.worker-fallback.burned {
+  transform: rotate(-12deg) translateY(8px);
+  filter: grayscale(1) brightness(0.8) contrast(1.3);
+}
+
+.worker-image.win,
+.worker-fallback.win {
   transform: scale(1.06);
 }
 
 .event-effect {
   position: absolute;
-  bottom: 10px;
-  right: 16px;
-  font-size: 28px;
+  bottom: 14px;
+  right: 18px;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--electric);
+  text-shadow: 0 0 12px rgba(250, 204, 21, 0.9);
   opacity: 0;
   transform: scale(0.8);
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
+  z-index: 4;
 }
 
 .event-effect.show {
   opacity: 1;
   transform: scale(1);
+}
+
+.electric-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 3;
+}
+
+.electric-overlay span {
+  position: absolute;
+  width: 4px;
+  height: 82px;
+  background: var(--electric);
+  box-shadow:
+    0 0 12px rgba(250, 204, 21, 1),
+    0 0 24px rgba(59, 130, 246, 0.7);
+  clip-path: polygon(45% 0%, 100% 38%, 62% 38%, 78% 100%, 0% 48%, 42% 48%);
+  animation: boltFlicker 0.18s infinite alternate;
+}
+
+.electric-overlay span:nth-child(1) {
+  top: 18px;
+  left: 24%;
+  transform: rotate(-18deg);
+}
+
+.electric-overlay span:nth-child(2) {
+  top: 26px;
+  right: 25%;
+  transform: rotate(22deg);
+}
+
+.electric-overlay span:nth-child(3) {
+  bottom: 10px;
+  left: 38%;
+  transform: rotate(12deg);
+}
+
+.electric-overlay span:nth-child(4) {
+  bottom: 22px;
+  right: 38%;
+  transform: rotate(-24deg);
+}
+
+.electric-overlay.active {
+  opacity: 1;
 }
 
 .question-tag {
@@ -194,7 +314,7 @@ h1, h2 {
 .option-btn {
   width: 100%;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   padding: 16px;
   border-radius: 14px;
@@ -205,7 +325,7 @@ h1, h2 {
 }
 
 .option-btn:hover {
-  background: rgba(255,255,255,0.09);
+  background: rgba(255, 255, 255, 0.09);
   transform: translateY(-1px);
 }
 
@@ -228,7 +348,7 @@ h1, h2 {
   margin-top: 18px;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
 }
 
@@ -243,11 +363,11 @@ h1, h2 {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .result-box {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px;
@@ -255,10 +375,57 @@ h1, h2 {
   text-align: left;
 }
 
+.result-box.compact {
+  margin: 4px 0 18px;
+  padding: 14px;
+}
+
+.result-box p {
+  margin: 8px 0;
+}
+
 .end-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.participant-form {
+  display: grid;
+  gap: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.form-grid label {
+  color: var(--muted);
+  font-size: 14px;
+  display: grid;
+  gap: 7px;
+}
+
+.form-grid label.full {
+  grid-column: 1 / -1;
+}
+
+.form-grid input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 13px 14px;
+  font-size: 16px;
+  outline: none;
+}
+
+.form-grid input:focus {
+  border-color: rgba(59, 130, 246, 0.75);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
 .btn {
@@ -286,19 +453,72 @@ h1, h2 {
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
-  background: rgba(255,255,255,0.14);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.screen-flash {
+  position: fixed;
+  inset: 0;
+  background: rgba(250, 204, 21, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.screen-flash.active {
+  animation: screenFlash 0.38s ease;
+}
+
+.shake {
+  animation: shake 0.36s ease;
+}
+
+@keyframes screenFlash {
+  0% { opacity: 0; }
+  20% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  15% { transform: translateX(-8px); }
+  30% { transform: translateX(7px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes boltFlicker {
+  from {
+    opacity: 0.25;
+    transform: scaleY(0.88) rotate(var(--r, 0deg));
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1.08) rotate(var(--r, 0deg));
+  }
 }
 
 @media (max-width: 640px) {
   .app {
-    padding: 14px;
-    align-items: flex-start;
+    padding: 12px 14px;
+    justify-content: flex-start;
+  }
+
+  .app-header {
+    min-height: 48px;
+  }
+
+  .brand-logo {
+    max-width: 180px;
+    max-height: 46px;
   }
 
   .card {
@@ -314,11 +534,24 @@ h1, h2 {
     font-size: 21px;
   }
 
-  .worker-avatar {
-    font-size: 52px;
+  .scene {
+    min-height: 130px;
+  }
+
+  .worker-image {
+    width: 96px;
+    height: 96px;
+  }
+
+  .worker-fallback {
+    font-size: 58px;
   }
 
   .mini-preview {
     min-height: 88px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 }
