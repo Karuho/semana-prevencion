@@ -15,6 +15,16 @@ const GOOGLE_FORM = {
     }
 };
 
+export async function onRequestGet() {
+    return jsonResponse(
+        {
+            ok: false,
+            error: "Método no permitido. Esta ruta solo acepta POST."
+        },
+        405
+    );
+}
+
 const ALLOWED_ORIGINS = [
     "https://semana-prevencion.pages.dev"
 ];
@@ -188,4 +198,36 @@ function jsonResponse(data, status = 200) {
             "Cache-Control": "no-store"
         }
     });
+}
+
+export async function onRequestOptions() {
+    return new Response(null, {
+        status: 204,
+        headers: {
+            "Allow": "POST, OPTIONS",
+            "Cache-Control": "no-store"
+        }
+    });
+}
+
+export async function onRequestPut() {
+    return methodNotAllowed();
+}
+
+export async function onRequestDelete() {
+    return methodNotAllowed();
+}
+
+export async function onRequestPatch() {
+    return methodNotAllowed();
+}
+
+function methodNotAllowed() {
+    return jsonResponse(
+        {
+            ok: false,
+            error: "Método no permitido. Esta ruta solo acepta POST."
+        },
+        405
+    );
 }
